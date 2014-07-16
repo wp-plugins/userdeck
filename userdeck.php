@@ -184,6 +184,8 @@ class UserDeck {
 		<div id="userdeck-wrapper" class="wrap">
 			<?php screen_icon( 'options-general' ); ?>
 			<h2>UserDeck</h2>
+
+			<p><a href="http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website" target="_blank">UserDeck</a> provides customer support software that embeds into your WordPress website.</p>
 			
 			<?php if ($show_guides_options): ?>
 				<h2>Guides</h2>
@@ -271,14 +273,43 @@ class UserDeck {
 				</div>
 			<?php else: ?>
 				<p>
-					A UserDeck account is required to use the plugin. <a href="http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website" target="_blank">Learn more about UserDeck</a>.
+					An account is required to use the plugin. Don't have an account? You can create one for free.
 				</p>
-
-				<p>Connect below to login or signup. Don't have an account? You can create a new account for free.</p>
 				
-				<p>
-					<a href="javascript:void(0)" onclick="UserDeck.showConnect()" class="button button-primary button-hero" id="button-connect">Connect to UserDeck</a>
-				</p>
+				<div id="button-connect">
+					<h3>Connect to UserDeck</h3>
+					<a href="javascript:void(0)" onclick="UserDeck.showConnect('login')" class="button button-primary button-hero">Login</a>
+					<span style="margin: 0 10px; font-size: 16px; line-height: 42px;">or</span>
+					<a href="javascript:void(0)" onclick="UserDeck.showConnect('signup')" class="button button-primary button-hero">Signup</a>
+				</div>
+
+				<div id="connect-frame"></div>
+		
+				<div id="feature-wrapper">
+					<h2>Features</h2>
+
+					<h3>Guides</h3>
+
+					<p>
+						A knowledge base widget that embeds inline to any page of your WordPress website.
+					</p>
+
+					<p>
+						It inherits your theme's design and blends right in.
+					</p>
+
+					<p>
+						You can embed a collection, category, or a single article instead of an entire knowledge base.
+					</p>
+
+					<p>
+						Your users will save time by finding answers to common questions through self service.
+					</p>
+
+					<p>
+						<a href="http://userdeck.com/guides?utm_source=wordpress&utm_medium=link&utm_campaign=website" target="_blank">Learn more about Guides</a>
+					</p>
+				</div>
 
 				<script type="text/javascript">
 					var plugin_settings_nonce = "<?php echo wp_create_nonce('userdeck-options'); ?>";
@@ -286,6 +317,7 @@ class UserDeck {
 				</script>
 				
 				<style type="text/css">
+					#button-connect { margin: 40px 0; }
 					#iframe-guides { display: none; box-shadow: 0 1px 1px rgba(0,0,0,.04); border: 1px solid #e5e5e5; padding: 2px; background: #fff; }
 				</style>
 			<?php endif; ?>
