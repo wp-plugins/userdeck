@@ -1,9 +1,9 @@
 === UserDeck ===
 Contributors: userdeck
-Tags: userdeck, customer support, customer service, knowledge base
+Tags: userdeck, customer support, customer service, knowledge base, faq, frequently asked questions, documentation, docs
 Requires at least: 3.0.1
 Tested up to: 3.9.1
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 
 Easily integrate UserDeck's embedded support software into your WordPress website.
 
@@ -13,7 +13,15 @@ Easily integrate UserDeck's embedded support software into your WordPress websit
 
 = Features =
 
-Guides is a knowledge base widget that embeds into any page of your WordPress website. You can embed a collection, category, or a single article instead of an entire knowledge base. It inherits your theme's design. Your users will save time by finding answers to common questions through self service.
+Guides is a knowledge base widget that embeds inline to any page of your WordPress website.
+
+It inherits your theme's design and blends right in.
+
+You can embed a collection, category, or a single article instead of an entire knowledge base.
+
+Your users will save time by finding answers to common questions through self service.
+
+[Learn more about Guides](http://userdeck.com/guides?utm_source=wordpress&utm_medium=link&utm_campaign=website)
 
 == Installation ==
 
@@ -33,5 +41,8 @@ This section describes how to install the plugin and get it working.
 
 == Changelog ==
 
-= 1.0.0 (May 2014) =
+= 1.0.1 =
+* Improved connect flows
+
+= 1.0.0 =
 * Initial release

@@ -4,10 +4,10 @@ var UserDeck = {
 	
 	guides_key: null,
 	
-	showConnect : function () {
-		var wrapper = jQuery('#userdeck-wrapper');
+	showConnect : function (type) {
+		var wrapper = jQuery('#connect-frame');
 
-		var iframe = jQuery('<iframe id="iframe-guides" src="http://app.userdeck.com/install/guides" width="400" height="600" frameborder="0" ALLOWTRANSPARENCY="true"></iframe>')
+		var iframe = jQuery('<iframe id="iframe-guides" src="http://app.userdeck.com/' + type + '?redir=install/guides" width="400" height="600" frameborder="0" ALLOWTRANSPARENCY="true"></iframe>')
 
 		wrapper.append(iframe);
 
@@ -24,6 +24,7 @@ var UserDeck = {
 	
 	disableConnect : function () {
 		jQuery('#button-connect').hide();
+		jQuery('#feature-wrapper').hide();
 		//.removeClass('button-primary').addClass('button-secondary')
 	},
 	
