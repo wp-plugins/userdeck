@@ -51,8 +51,6 @@ class UserDeck {
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array($this, 'add_action_links'));
 		
-		add_action( 'upgrader_process_complete', array( $this, 'handle_update'), 10, 2 );
-		
 	}
 	
 	public function install() {}
@@ -60,58 +58,6 @@ class UserDeck {
 	public function uninstall() {
 		
 		delete_option('userdeck');
-		
-	}
-	
-	public function handle_update( $upgrader = null, $data = array() ) {
-		
-		if ( !isset( $data['type'] ) || $data['type'] != 'plugin' ) {
-			return;
-		}
-		
-		if ( !isset( $data['action'] ) || $data['action'] != 'update' ) {
-			return;
-		}
-		
-		$plugin = plugin_basename(__FILE__);
-		
-		if ( isset( $data['plugins'] ) && is_array( $data['plugins'] ) && count($data['plugins']) > 0 ) {
-			if ( !isset($data['bulk']) || !$data['bulk'] ) {
-				return;
-			}
-			if ( !in_array( $plugin, $data['plugins'] ) ) {
-				return;
-			}
-		}
-		elseif ( isset( $data['plugin'] ) ) {
-			if ( $data['plugin'] != $plugin ) {
-				return;
-			}
-		}
-		else {
-			return;
-		}
-		
-		$pages = get_pages(array('post_type' => 'page'));
-		
-		foreach ($pages as $page) {
-			if ( has_shortcode( $page->post_content, 'userdeck_guides' ) ) {
-				
-				$page_content = strip_shortcodes($page->post_content);
-				
-				$options = $this->get_settings();
-				
-				$guides_key = $options['guides_key'];
-				
-				update_post_meta( $page->ID, 'userdeck_guides_key', $guides_key );
-				
-				wp_update_post( array(
-					'ID'           => $page->ID,
-					'post_content' => $page_content,
-				) );
-				
-			}
-		}
 		
 	}
 	
