@@ -3,7 +3,7 @@
  * Plugin Name: UserDeck
  * Plugin URI: http://wordpress.org/plugins/userdeck
  * Description: Embedded customer support from <a href="http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website">UserDeck</a> that embeds into your website.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: UserDeck
  * Author URI: http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website
  */
@@ -12,11 +12,26 @@ defined( 'ABSPATH' ) or die();
 
 class UserDeck {
 	
+	protected $guide_page;
+	
 	/**
 	 * class constructor
 	 * register the activation and de-activation hooks and hook into a bunch of actions
 	 */
 	public function __construct() {
+		
+		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+		
+		if ( is_plugin_active( 'wordpress-seo/wp-seo.php' ) || is_plugin_active( 'wordpress-seo-premium/wp-seo-premium.php' ) ) {
+		
+			$this->guide_page = $this->get_guide_page();
+		
+			global $wpseo_sitemaps;
+			$wpseo_sitemaps->register_sitemap('userdeck', array( $this, 'register_sitemap' ) );
+			
+			add_filter( 'wpseo_sitemap_index', array( $this, 'register_sitemap_index' ) );
+			
+		}
 		
 		register_activation_hook( __FILE__, array( $this, 'install' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'uninstall' ) );
@@ -29,10 +44,14 @@ class UserDeck {
 
 		add_action( 'wp_head', array( $this, 'output_escaped_fragment_meta' ) );
 		
-		add_shortcode( 'userdeck_guides', array( $this, 'output_guides_code') );
+		add_filter( 'the_content', array( $this, 'output_guides_page' ) );
+		
+		add_shortcode( 'userdeck_guides', array( $this, 'output_guides_shortcode') );
 		
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array($this, 'add_action_links'));
+		
+		add_action( 'upgrader_process_complete', array( $this, 'handle_update') );
 		
 	}
 	
@@ -41,6 +60,51 @@ class UserDeck {
 	public function uninstall() {
 		
 		delete_option('userdeck');
+		
+	}
+	
+	public function handle_update( $upgrader, $data ) {
+		
+		if ( !isset( $data['type'] ) || $data['type'] != 'plugin' ) {
+			return;
+		}
+		
+		if ( !isset( $data['action'] ) || $data['action'] != 'update' ) {
+			return;
+		}
+		
+		if ( !isset($data['bulk']) || !$data['bulk'] ) {
+			return;
+		}
+		
+		if ( !isset( $data['plugins'] ) || !is_array( $data['plugins'] ) || count($data['plugins']) < 1 ) {
+			return;
+		}
+		
+		if ( !in_array( 'userdeck', $data['plugins'] ) ) {
+			return;
+		}
+		
+		$pages = get_pages(array('post_type' => 'page'));
+		
+		foreach ($pages as $page) {
+			if ( has_shortcode( $page->post_content, 'userdeck_guides' ) ) {
+				
+				$page_content = strip_shortcodes($page->post_content);
+				
+				$options = $this->get_settings();
+				
+				$guides_key = $options['guides_key'];
+				
+				update_post_meta( $page->ID, 'userdeck_guides_key', $guides_key );
+				
+				wp_update_post( array(
+					'ID'           => $page->ID,
+					'post_content' => $page_content,
+				) );
+				
+			}
+		}
 		
 	}
 	
@@ -65,16 +129,114 @@ class UserDeck {
 
 	}
 	
-	/**
-	 * output the userdeck guides javascript install code
-	 * @return null
-	 */
-	public function output_guides_code() {
+	public function get_guide_page()
+	{
+		
+		$posts = get_posts(array(
+			'post_type' => 'page',
+			'meta_key' => 'userdeck_guides_key',
+			'posts_per_page' => 1,
+		));
+		
+		if (!empty($posts)) {
+			return $posts[0];
+		}
+		
+		return null;
+		
+	}
+	
+	public function register_sitemap_index( $xml ) {
+		
+		global $wpseo_sitemaps;
+		
+		$post = $this->guide_page;
+		
+		$guides_key = get_post_meta($post->ID, 'userdeck_guides_key', true);
+
+		$sitemap_url = 'https://userdeck.net/g/' . $guides_key . '/sitemap.xml';
+
+		$request = wp_remote_get( $sitemap_url );
+
+		$sitemap = '';
+
+		if ( wp_remote_retrieve_response_code( $request ) == 200 ) {
+			$sitemap = wp_remote_retrieve_body( $request );
+		}
+		
+		preg_match('/'.preg_quote('<url><loc>https://userdeck.net/g/'.$guides_key.'</loc><lastmod>', '/').'(.*?)'.preg_quote('</lastmod><changefreq>', '/').'(.*?)'.preg_quote('</changefreq><priority>', '/').'(.*?)'.preg_quote('</priority></url>', '/').'/', $sitemap, $matches);
+		
+		$xml .= '<sitemap>
+				<loc>' . wpseo_xml_sitemaps_base_url('userdeck-sitemap.xml' ) . '</loc>
+				<lastmod>'.$matches[1].'</lastmod>
+				</sitemap>';
+		
+		return $xml;
+		
+	}
+	
+	public function register_sitemap() {
+		
+		global $wpseo_sitemaps;
+		
+		$post = $this->guide_page;
+		
+		$guides_key = get_post_meta($post->ID, 'userdeck_guides_key', true);
+
+		$sitemap_url = 'https://userdeck.net/g/' . $guides_key . '/sitemap.xml';
+
+		$request = wp_remote_get( $sitemap_url );
+
+		$sitemap = '';
+
+		if ( wp_remote_retrieve_response_code( $request ) == 200 ) {
+			$sitemap = wp_remote_retrieve_body( $request );
+		}
+		
+		$sitemap = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $sitemap);
+		$sitemap = preg_replace('/'.preg_quote('<url><loc>https://userdeck.net/g/'.$guides_key.'</loc><lastmod>', '/').'(.*?)'.preg_quote('</lastmod><changefreq>', '/').'(.*?)'.preg_quote('</changefreq><priority>', '/').'(.*?)'.preg_quote('</priority></url>', '/').'/', '', $sitemap);
+		$sitemap = str_replace('https://userdeck.net/g/'.$guides_key.'/', rtrim(get_permalink($post->ID), '/').'#!', $sitemap);
+		
+		$wpseo_sitemaps->set_sitemap( $sitemap );
+		
+	}
+	
+	public function output_guides_page( $content ) {
+		
+		global $post;
+		
+		if ( isset( $post ) && is_page() ) {
+		
+			$guides_key = get_post_meta($post->ID, 'userdeck_guides_key', true);
+			
+			if (!empty($guides_key)) {
+				return $this->output_guides_code($guides_key);
+			}
+			
+		}
+		
+		return $content;
+		
+	}
+	
+	public function output_guides_shortcode() {
 		
 		// retrieve the options
 		$options = $this->get_settings();
 		
 		$guides_key = $options['guides_key'];
+		
+		return $this->output_guides_code($guides_key);
+		
+	}
+	
+	/**
+	 * output the userdeck guides javascript install code
+	 * @return null
+	 */
+	public function output_guides_code($guides_key) {
+		
+		$content = '';
 
 		if (isset( $_GET['_escaped_fragment_'] )) {
 
@@ -105,18 +267,15 @@ class UserDeck {
 			
 			$content = str_replace('/g/'.$guides_key.'/', get_permalink().'#!', $content);
 
-			echo $content;
-
 		}
 		else {
 			
-			?>
+			$content = sprintf('<a href="http://userdeck.com" data-userdeck-guides="%s">Customer Support Software</a>', $guides_key);
+			$content .= '<script src="//widgets.userdeck.com/guides.js"></script>';
 			
-			<a href="http://userdeck.com" data-userdeck-guides="<?php echo $guides_key ?>">Customer Support Software</a>
-			<script src="//widgets.userdeck.com/guides.js"></script>
-			
-			<?php
 		}
+		
+		return $content;
 		
 	}
 	
@@ -125,20 +284,12 @@ class UserDeck {
 		return '[userdeck_guides key="'.$guides_key.'"]';
 		
 	}
-	
-	public function output_guides_shortcode($guides_key) {
-		
-		?>
-		<input type="text" onfocus="this.select()" readonly="readonly" value='<?php echo $this->generate_guides_shortcode($guides_key) ?>' class="code" style="width: 350px;" />
-		<?php
-		
-	}
 
 	public function output_escaped_fragment_meta() {
 
 		global $post;
 		
-		if ( isset( $post ) && is_singular() && has_shortcode( $post->post_content, 'userdeck_guides' ) ) {
+		if ( isset( $post ) && is_page() && has_shortcode( $post->post_content, 'userdeck_guides' ) ) {
 			?>
 			<meta name="fragment" content="!">
 			<?php
@@ -239,15 +390,17 @@ class UserDeck {
 			<?php if ($show_guides_options): ?>
 				<h2>Guides</h2>
 				
+				<p>Guides is a knowledge base widget that embeds inline into any page of your WordPress pages and inherits the styling and blends in.</p>
+				
 				<div id="poststuff">
 					<div class="postbox-container" style="width:65%;">
 						<?php if (current_user_can('publish_pages')) : ?>
 							<form method="post" action="options-general.php?page=userdeck">
 								<div class="postbox">
-									<h3 class="hndle" style="cursor: auto;"><span>Create a Page</span></h3>
+									<h3 class="hndle" style="cursor: auto;"><span>Create a Knowledge Base Page</span></h3>
 									
 									<div class="inside">
-										<p>Create a new page with the Guides shortcode.</p>
+										<p>Create a new page with the Guides knowledge base inline widget.</p>
 										
 										<table class="form-table">
 											<tbody>
@@ -256,7 +409,9 @@ class UserDeck {
 														<label for="page-title">Page Title</label>
 													</th>
 													<td>
-														<input name="page_title" type="text" value="" id="page-title" />
+														<input name="page_title" type="text" value="" placeholder="Support" id="page-title" />
+														<br class="clear">
+														<p class="description">The title of the new knowledge base page to create.</p>
 													</td>
 												</tr>
 											</tbody>
@@ -276,16 +431,16 @@ class UserDeck {
 							<?php if (count($pages) > 0): ?>
 								<form method="post" action="options-general.php?page=userdeck">
 									<div class="postbox">
-										<h3 class="hndle" style="cursor: auto;"><span>Add to Page</span></h3>
+										<h3 class="hndle" style="cursor: auto;"><span>Add Knowledge Base to Page</span></h3>
 										
 										<div class="inside">
-											<p>Add the Guides shortcode to an existing page.</p>
+											<p>Add the Guides knowledge base inline widget to an existing page.</p>
 											
 											<table class="form-table">
 												<tbody>
 													<tr valign="top">
 														<th scope="row">
-															<label for="page-id">Page Title</label>
+															<label for="page-id">Page</label>
 														</th>
 														<td>
 															<select name="page_id" id="page-id">
@@ -293,6 +448,8 @@ class UserDeck {
 																	<option value="<?php echo $id ?>"><?php echo $title ?></option>
 																<?php endforeach; ?>
 															</select>
+															<br class="clear">
+															<p class="description">The title of the existing page to update with a knowledge base.</p>
 														</td>
 													</tr>
 												</tbody>
@@ -308,16 +465,6 @@ class UserDeck {
 								</form>
 							<?php endif; ?>
 						<?php endif; ?>
-						
-						<div class="postbox">
-							<h3 class="hndle" style="cursor: auto;"><span>Copy Shortcode</h3>
-							
-							<div class="inside">
-								<p>Copy the Guides shortcode to any of your pages or posts.</p>
-								
-								<?php $this->output_guides_shortcode($guides_key) ?>
-							</div>
-						</div>
 					</div>
 				</div>
 			<?php else: ?>
@@ -409,12 +556,13 @@ class UserDeck {
 						if (!empty($page_title) && !empty($guides_key)) {
 							$page_id = wp_insert_post( array(
 								'post_title'     => $page_title,
-								'post_content'   => $this->generate_guides_shortcode($guides_key),
 								'post_status'    => 'publish',
 								'post_author'    => get_current_user_id(),
 								'post_type'      => 'page',
 								'comment_status' => 'closed',
 							) );
+							
+							update_post_meta( $page_id, 'userdeck_guides_key', $guides_key );
 							
 							wp_redirect( add_query_arg( array('page' => 'userdeck', 'page_added' => 1, 'page_id' => $page_id), 'options-general.php' ) );
 							exit;
@@ -433,14 +581,7 @@ class UserDeck {
 						$guides_key = $options['guides_key'];
 						
 						if (!empty($page_id) && !empty($guides_key)) {
-							$page = get_post($page_id);
-							$page_content = $page->post_content;
-							$page_content .= "\n" . $this->generate_guides_shortcode($guides_key);
-							
-							$page_id = wp_update_post( array(
-								'ID'           => $page_id,
-								'post_content' => $page_content,
-							) );
+							update_post_meta( $page_id, 'userdeck_guides_key', $guides_key );
 							
 							wp_redirect( add_query_arg( array('page' => 'userdeck', 'page_updated' => 1, 'page_id' => $page_id), 'options-general.php' ) );
 							exit;
