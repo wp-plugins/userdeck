@@ -3,7 +3,7 @@
  * Plugin Name: UserDeck
  * Plugin URI: http://wordpress.org/plugins/userdeck
  * Description: Embedded customer support from <a href="http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website">UserDeck</a> that embeds into your website.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: UserDeck
  * Author URI: http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website
  */
@@ -39,6 +39,7 @@ class UserDeck {
 		if ( is_admin() ) {
 			add_action( 'admin_menu', array( $this, 'create_options_page') );
 			add_action( 'admin_init', array( $this, 'settings_init') );
+			add_action( 'admin_init', array( $this, 'migrate_guides_shortcodes') );
 			add_action( 'admin_notices', array( $this, 'admin_notice') );
 		}
 
@@ -51,8 +52,6 @@ class UserDeck {
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array($this, 'add_action_links'));
 		
-		add_action( 'upgrader_process_complete', array( $this, 'handle_update'), 10, 2 );
-		
 	}
 	
 	public function install() {}
@@ -63,32 +62,11 @@ class UserDeck {
 		
 	}
 	
-	public function handle_update( $upgrader = null, $data = array() ) {
+	public function migrate_guides_shortcodes() {
 		
-		if ( !isset( $data['type'] ) || $data['type'] != 'plugin' ) {
-			return;
-		}
+		$options = $this->get_settings();
 		
-		if ( !isset( $data['action'] ) || $data['action'] != 'update' ) {
-			return;
-		}
-		
-		$plugin = plugin_basename(__FILE__);
-		
-		if ( isset( $data['plugins'] ) && is_array( $data['plugins'] ) && count($data['plugins']) > 0 ) {
-			if ( !isset($data['bulk']) || !$data['bulk'] ) {
-				return;
-			}
-			if ( !in_array( $plugin, $data['plugins'] ) ) {
-				return;
-			}
-		}
-		elseif ( isset( $data['plugin'] ) ) {
-			if ( $data['plugin'] != $plugin ) {
-				return;
-			}
-		}
-		else {
+		if ( isset( $options['migrate_guides_shortcodes'] ) && $options['migrate_guides_shortcodes'] == 1 ) {
 			return;
 		}
 		
@@ -98,8 +76,6 @@ class UserDeck {
 			if ( has_shortcode( $page->post_content, 'userdeck_guides' ) ) {
 				
 				$page_content = strip_shortcodes($page->post_content);
-				
-				$options = $this->get_settings();
 				
 				$guides_key = $options['guides_key'];
 				
@@ -112,6 +88,10 @@ class UserDeck {
 				
 			}
 		}
+		
+		$options['migrate_guides_shortcodes'] = 1;
+		
+		$this->update_settings($options);
 		
 	}
 	
