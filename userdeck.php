@@ -3,7 +3,7 @@
  * Plugin Name: UserDeck
  * Plugin URI: http://wordpress.org/plugins/userdeck
  * Description: Embedded customer support from <a href="http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website">UserDeck</a> that embeds into your website.
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: UserDeck
  * Author URI: http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website
  */
@@ -73,15 +73,22 @@ class UserDeck {
 			return;
 		}
 		
-		if ( !isset($data['bulk']) || !$data['bulk'] ) {
-			return;
-		}
+		$plugin = plugin_basename(__FILE__);
 		
-		if ( !isset( $data['plugins'] ) || !is_array( $data['plugins'] ) || count($data['plugins']) < 1 ) {
-			return;
+		if ( isset( $data['plugins'] ) && is_array( $data['plugins'] ) && count($data['plugins']) > 0 ) {
+			if ( !isset($data['bulk']) || !$data['bulk'] ) {
+				return;
+			}
+			if ( !in_array( $plugin, $data['plugins'] ) ) {
+				return;
+			}
 		}
-		
-		if ( !in_array( 'userdeck', $data['plugins'] ) ) {
+		elseif ( isset( $data['plugin'] ) ) {
+			if ( $data['plugin'] != $plugin ) {
+				return;
+			}
+		}
+		else {
 			return;
 		}
 		
