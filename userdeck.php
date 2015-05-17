@@ -51,7 +51,7 @@ class UserDeck {
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array($this, 'add_action_links'));
 		
-		add_action( 'upgrader_process_complete', array( $this, 'handle_update') );
+		add_action( 'upgrader_process_complete', array( $this, 'handle_update'), 10, 2 );
 		
 	}
 	
@@ -63,7 +63,7 @@ class UserDeck {
 		
 	}
 	
-	public function handle_update( $upgrader, $data ) {
+	public function handle_update( $upgrader = null, $data = array() ) {
 		
 		if ( !isset( $data['type'] ) || $data['type'] != 'plugin' ) {
 			return;
