@@ -41,9 +41,6 @@ This section describes how to install the plugin and get it working.
 
 == Changelog ==
 
-= 1.0.5 =
-* Added migrating guide shortcodes to post meta
-
 = 1.0.4 =
 * Switched from shortcodes to post meta to attach Guides to posts
 * Added sitemap integration with the Yoast WordPress SEO plugin
