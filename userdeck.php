@@ -3,7 +3,7 @@
  * Plugin Name: UserDeck
  * Plugin URI: http://wordpress.org/plugins/userdeck
  * Description: Embedded customer support from <a href="http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website">UserDeck</a> that embeds into your website.
- * Version: 1.0.6
+ * Version: 1.0.7
  * Author: UserDeck
  * Author URI: http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website
  */
@@ -37,7 +37,7 @@ class UserDeck {
 		register_deactivation_hook( __FILE__, array( $this, 'uninstall' ) );
 		
 		if ( is_admin() ) {
-			add_action( 'admin_menu', array( $this, 'create_options_page') );
+			add_action( 'admin_menu', array( $this, 'create_menu_page') );
 			add_action( 'admin_init', array( $this, 'settings_init') );
 			add_action( 'admin_init', array( $this, 'migrate_guides_shortcodes') );
 			add_action( 'admin_notices', array( $this, 'admin_notice') );
@@ -51,6 +51,8 @@ class UserDeck {
 		
 		$plugin = plugin_basename(__FILE__);
 		add_filter("plugin_action_links_$plugin", array($this, 'add_action_links'));
+		
+		add_filter( 'plugin_row_meta', array( $this, 'add_plugin_meta_links' ), 10, 4 );
 		
 	}
 	
@@ -101,7 +103,13 @@ class UserDeck {
 	 */
 	public function get_settings() {
 		
-		return get_option( 'userdeck', array('guides_key' => null) );
+		$defaults = array('guides_key' => null);
+		
+		$options = get_option( 'userdeck', $defaults );
+		
+		$options = wp_parse_args( $options, $defaults );
+		
+		return $options;
 		
 	}
 
@@ -116,8 +124,21 @@ class UserDeck {
 
 	}
 	
-	public function get_guide_page()
-	{
+	public function has_guide_meta() {
+		
+		global $post;
+		
+		$guides_key = get_post_meta($post->ID, 'userdeck_guides_key', true);
+		
+		if (!empty($guides_key)) {
+			return true;
+		}
+		
+		return false;
+		
+	}
+	
+	public function get_guide_page() {
 		
 		$posts = get_posts(array(
 			'post_type' => 'page',
@@ -276,7 +297,8 @@ class UserDeck {
 
 		global $post;
 		
-		if ( isset( $post ) && is_page() && has_shortcode( $post->post_content, 'userdeck_guides' ) ) {
+		if ( isset( $post ) && is_page() ) {
+			if ($this->has_guide_meta() || has_shortcode( $post->post_content, 'userdeck_guides' ))
 			?>
 			<meta name="fragment" content="!">
 			<?php
@@ -323,7 +345,7 @@ class UserDeck {
 						<div class="error" id="userdeck-notice">
 							<p>
 								<strong>UserDeck is not setup</strong>.
-								Please <a href="options-general.php?page=userdeck">configure the UserDeck settings</a> to use the plugin.
+								Please <a href="<?php echo admin_url('admin.php?page=userdeck') ?>">configure the UserDeck settings</a> to use the plugin.
 							</p>
 						</div>
 					<?php
@@ -337,9 +359,9 @@ class UserDeck {
 	 * create the relevant type of options page
 	 * @return null
 	 */
-	public function create_options_page() {
+	public function create_menu_page() {
 		
-		add_options_page('UserDeck Settings', 'UserDeck', 'manage_options', 'userdeck', array($this, 'render_options_page'));
+		add_menu_page('UserDeck', 'UserDeck', 'manage_options', 'userdeck', array($this, 'render_options_page'), 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iNjNweCIgaGVpZ2h0PSI2M3B4IiB2aWV3Qm94PSIwIDAgNjMgNjMiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDYzIDYzIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cGF0aCBmaWxsPSIjOTk5OTk5IiBkPSJNNTIuNSwzSDEwLjVDNS45LDMsMiw3LjMsMiwxMS45djI4LjdjMCw0LjYsMy45LDguMyw4LjUsOC4zaDIyLjFsMTIuOCwxMC4yYzAuMywwLjIsMC43LDAuNCwxLDAuNGMwLjIsMCwwLjQtMC4xLDAuNy0wLjJjMC42LTAuMywwLjktMC45LDAuOS0xLjVWNDloNC41YzQuNiwwLDguNS0zLjgsOC41LTguM1YxMS45QzYxLDcuMyw1Ny4xLDMsNTIuNSwzeiBNMjIuNCwzMi4xbC0yLjIsMi4yYy0wLjMsMC4zLTAuOCwwLjMtMS4xLDBMMTEsMjYuMWMtMC4zLTAuMy0wLjMtMC44LDAtMS4xbDguMi04LjJjMC4zLTAuMywwLjgtMC4zLDEuMSwwbDIuMiwyLjJjMC4zLDAuMywwLjMsMC44LDAsMS4xTDE3LjUsMjVjLTAuMywwLjMtMC4zLDAuOCwwLDEuMWw0LjksNC45QzIyLjcsMzEuNCwyMi43LDMxLjgsMjIuNCwzMi4xeiBNMzcuOCwxNC40bC03LjQsMjQuOWMtMC4xLDAuNC0wLjUsMC42LTAuOSwwLjVMMjYuNiwzOWMtMC40LTAuMS0wLjYtMC41LTAuNS0wLjlsNy40LTI0LjljMC4xLTAuNCwwLjUtMC42LDAuOS0wLjVsMi45LDAuOUMzNy43LDEzLjUsMzcuOSwxNCwzNy44LDE0LjR6IE01Mi4zLDI2LjFsLTguMiw4LjJjLTAuMywwLjMtMC44LDAuMy0xLjEsMGwtMi4yLTIuMmMtMC4zLTAuMy0wLjMtMC44LDAtMS4xbDQuOS00LjljMC4zLTAuMywwLjMtMC44LDAtMS4xbC00LjktNC45Yy0wLjMtMC4zLTAuMy0wLjgsMC0xLjFsMi4yLTIuMmMwLjMtMC4zLDAuOC0wLjMsMS4xLDBsOC4yLDguMkM1Mi42LDI1LjMsNTIuNiwyNS44LDUyLjMsMjYuMXoiLz48L3N2Zz4=');
 		
 	}
 	
@@ -369,7 +391,6 @@ class UserDeck {
 		?>
 		
 		<div id="userdeck-wrapper" class="wrap">
-			<?php screen_icon( 'options-general' ); ?>
 			<h2>UserDeck</h2>
 
 			<p><a href="http://userdeck.com?utm_source=wordpress&utm_medium=link&utm_campaign=website" target="_blank">UserDeck</a> provides customer support software that embeds into your WordPress website.</p>
@@ -382,7 +403,7 @@ class UserDeck {
 				<div id="poststuff">
 					<div class="postbox-container" style="width:65%;">
 						<?php if (current_user_can('publish_pages')) : ?>
-							<form method="post" action="options-general.php?page=userdeck">
+							<form method="post" action="<?php echo admin_url('admin.php?page=userdeck') ?>">
 								<div class="postbox">
 									<h3 class="hndle" style="cursor: auto;"><span>Create a Knowledge Base Page</span></h3>
 									
@@ -416,7 +437,7 @@ class UserDeck {
 						
 						<?php if (current_user_can('edit_pages')) : ?>
 							<?php if (count($pages) > 0): ?>
-								<form method="post" action="options-general.php?page=userdeck">
+								<form method="post" action="<?php echo admin_url('admin.php?page=userdeck') ?>">
 									<div class="postbox">
 										<h3 class="hndle" style="cursor: auto;"><span>Add Knowledge Base to Page</span></h3>
 										
@@ -473,21 +494,20 @@ class UserDeck {
 
 					<h3>Guides</h3>
 
-					<p>
-						A knowledge base widget that embeds inline to any page of your WordPress website.
-					</p>
-
-					<p>
-						It inherits your theme's design and blends right in.
-					</p>
-
-					<p>
-						You can embed a collection, category, or a single article instead of an entire knowledge base.
-					</p>
-
-					<p>
-						Your users will save time by finding answers to common questions through self service.
-					</p>
+					<ul>
+						<li>
+							A knowledge base widget that embeds inline to any page of your WordPress website.
+						</li>
+						<li>
+							It inherits your theme's design and blends right in.
+						</li>
+						<li>
+							You can embed a collection, category, or a single article instead of an entire knowledge base.
+						</li>
+						<li>
+							Your users will save time by finding answers to common questions through self service.
+						</li>
+					</ul>
 
 					<p>
 						<a href="http://userdeck.com/guides?utm_source=wordpress&utm_medium=link&utm_campaign=website" target="_blank">Learn more about Guides</a>
@@ -496,12 +516,13 @@ class UserDeck {
 
 				<script type="text/javascript">
 					var plugin_settings_nonce = "<?php echo wp_create_nonce('userdeck-options'); ?>";
-					var plugin_url = "<?php echo get_admin_url() . add_query_arg( array('page' => 'userdeck'), 'options-general.php' ); ?>";
+					var plugin_url = "<?php echo get_admin_url() . add_query_arg( array('page' => 'userdeck'), 'admin.php' ); ?>";
 				</script>
 				
 				<style type="text/css">
 					#button-connect { margin: 40px 0; }
 					#iframe-guides { display: none; box-shadow: 0 1px 1px rgba(0,0,0,.04); border: 1px solid #e5e5e5; padding: 2px; background: #fff; }
+					#feature-wrapper ul { list-style-type: disc; padding-left: 20px; }
 				</style>
 			<?php endif; ?>
 		</div>
@@ -535,10 +556,7 @@ class UserDeck {
 				if ( isset( $_POST['userdeck-page-create'] ) ) {
 					if ( isset( $_REQUEST['_wpnonce'] ) && wp_verify_nonce( $_REQUEST['_wpnonce'], 'userdeck-page-create' ) ) {
 						$page_title = wp_kses( trim( $_POST['page_title'] ), array() );
-						
-						$options = $this->get_settings();
-			
-						$guides_key = $options['guides_key'];
+						$guides_key = $_POST['guides_key'];
 						
 						if (!empty($page_title) && !empty($guides_key)) {
 							$page_id = wp_insert_post( array(
@@ -551,7 +569,7 @@ class UserDeck {
 							
 							update_post_meta( $page_id, 'userdeck_guides_key', $guides_key );
 							
-							wp_redirect( add_query_arg( array('page' => 'userdeck', 'page_added' => 1, 'page_id' => $page_id), 'options-general.php' ) );
+							wp_redirect( add_query_arg( array('page' => 'userdeck', 'page_added' => 1, 'page_id' => $page_id), 'admin.php' ) );
 							exit;
 						}
 					}
@@ -562,15 +580,12 @@ class UserDeck {
 				if ( isset( $_POST['userdeck-page-add'] ) ) {
 					if ( isset( $_REQUEST['_wpnonce'] ) && wp_verify_nonce( $_REQUEST['_wpnonce'], 'userdeck-page-add' ) ) {
 						$page_id = absint( $_POST['page_id'] );
-						
-						$options = $this->get_settings();
-			
-						$guides_key = $options['guides_key'];
+						$guides_key = $_POST['guides_key'];
 						
 						if (!empty($page_id) && !empty($guides_key)) {
 							update_post_meta( $page_id, 'userdeck_guides_key', $guides_key );
 							
-							wp_redirect( add_query_arg( array('page' => 'userdeck', 'page_updated' => 1, 'page_id' => $page_id), 'options-general.php' ) );
+							wp_redirect( add_query_arg( array('page' => 'userdeck', 'page_updated' => 1, 'page_id' => $page_id), 'admin.php' ) );
 							exit;
 						}
 					}
@@ -595,9 +610,23 @@ class UserDeck {
 	
 	public function add_action_links( $links ) {
 		
-		$settings_link = '<a href="options-general.php?page=userdeck">Settings</a>';
+		$settings_link = '<a href="'.admin_url('admin.php?page=userdeck').'">Settings</a>';
 		
 		array_unshift( $links, $settings_link );
+		
+		return $links;
+		
+	}
+	
+	public function add_plugin_meta_links( $links, $plugin_file ) {
+		
+		$plugin = plugin_basename(__FILE__);
+			
+		if ( $plugin == $plugin_file ) {
+			$support_link = '<a href="http://userdeck.com/support" target="_blank">Support</a>';
+			
+			array_push( $links, $support_link );
+		}
 		
 		return $links;
 		

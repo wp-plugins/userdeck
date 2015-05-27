@@ -3,7 +3,7 @@ Contributors: userdeck
 Tags: userdeck, customer support, customer service, knowledge base, faq, frequently asked questions, documentation, docs, widgets
 Requires at least: 3.7
 Tested up to: 4.2.2
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 
 Easily integrate UserDeck's embedded support software into your WordPress website.
 
@@ -13,13 +13,11 @@ Easily integrate UserDeck's embedded support software into your WordPress websit
 
 = Features =
 
-Guides is a knowledge base widget that embeds inline to any page of your WordPress website.
-
-It inherits your theme's design and blends right in.
-
-You can embed a collection, category, or a single article instead of an entire knowledge base.
-
-Your users will save time by finding answers to common questions through self service.
+**Guides**
+* A knowledge base widget that embeds inline to any page of your WordPress website.
+* It inherits your theme's design and blends right in.
+* You can embed a collection, category, or a single article instead of an entire knowledge base.
+* Your users will save time by finding answers to common questions through self service.
 
 [Learn more about Guides](http://userdeck.com/guides?utm_source=wordpress&utm_medium=link&utm_campaign=website)
 
@@ -39,23 +37,40 @@ This section describes how to install the plugin and get it working.
 2. UserDeck Guides widget
 3. UserDeck control panel
 
-== Changelog ==
+== Upgrade Notice ==
+
+= 1.0.7 =
+Fixed bug with SEO support for Guide pages.
 
 = 1.0.6 =
-* Added migrating guide shortcodes to post meta
+Added migrating all Guide pages from shortcodes to post meta.
 
 = 1.0.4 =
-* Switched from shortcodes to post meta to attach Guides to posts
+Switched to using post meta for attaching Guides to pages and sitemap integration with the Yoast WordPress SEO plugin.
+
+= 1.0.3 =
+Added automated SEO support for Guide pages.
+
+== Changelog ==
+
+= 1.0.7 =
+* Fixed bug with SEO support for Guide pages
+
+= 1.0.6 =
+* Added migrating all Guide pages shortcodes to post meta
+
+= 1.0.4 =
+* Switched from shortcodes to post meta to attach Guides to pages
 * Added sitemap integration with the Yoast WordPress SEO plugin
 
 = 1.0.3 =
-* Added automated SEO support
+* Added automated SEO support for Guide pages
 
 = 1.0.2 =
-* Changed iframe to use ssl
+* Switched to using SSL for connect flow on plugin settings page
 
 = 1.0.1 =
-* Improved connect flows
+* Improved connect flows on plugin settings page
 
 = 1.0.0 =
 * Initial release
