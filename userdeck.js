@@ -1,13 +1,5 @@
 var UserDeck = {
 	
-	connected: false,
-
-	account_key: null,
-
-	mailbox_id: null,
-	
-	guides_key: null,
-	
 	showConnect : function (type, start) {
 		var wrapper = jQuery('#connect-frame');
 		
@@ -50,58 +42,28 @@ var UserDeck = {
 	_receiveMessage : function (event) {
 		if (event.data && 'string' === typeof event.data && 'ud:' == event.data.substr(0, 3)) {
 			var msg = jQuery.parseJSON(event.data.substr(3));
+			var data = {};
 			
 			if ('installDetected' == msg.event) {
-				var account_key = msg.message.account_key;
-				var mailbox_id = msg.message.mailbox_id;
-				var guides_key = msg.message.guide_key;
-				var data = {
-					account_key: account_key,
-					mailbox_id: mailbox_id,
-					guides_key: guides_key
-				};
-				
-				UserDeck.connected = true;
-				
-				UserDeck.account_key = account_key;
-				UserDeck.mailbox_id = mailbox_id;
-				UserDeck.guides_key = guides_key;
-				
-				UserDeck.disableConnect();
-				UserDeck.hideConnect();
-				
-				UserDeck.updateSettings(data);
+				data.account_key = msg.message.account_key;
+				data.mailboxes = msg.message.mailboxes;
+				data.guides = msg.message.guides;
 			}
 			else if ('conversationKeysDetected' == msg.event) {
-				var account_key = msg.message.account_key;
-				var mailbox_id = msg.message.mailbox_id;
-				var data = {
-					account_key: account_key,
-					mailbox_id: mailbox_id
-				};
-				
-				UserDeck.connected = true;
-				
-				UserDeck.account_key = account_key;
-				UserDeck.mailbox_id = mailbox_id;
-				
-				UserDeck.disableConnect();
-				UserDeck.hideConnect();
-				
-				UserDeck.updateSettings(data);
+				data.account_key = msg.message.account_key;
+				data.mailboxes = msg.message.mailboxes;
 			}
 			else if ('guideKeyDetected' == msg.event) {
-				var guides_key = msg.message;
-				
-				UserDeck.connected = true;
-				
-				UserDeck.guides_key = guides_key;
-				
-				UserDeck.disableConnect();
-				UserDeck.hideConnect();
-				
-				UserDeck.updateSettings({guides_key: guides_key});
+				data.guides = msg.message.guides;
 			}
+			else {
+				return;
+			}
+			
+			UserDeck.disableConnect();
+			UserDeck.hideConnect();
+			
+			UserDeck.updateSettings(data);
 		}
 	},
 	
